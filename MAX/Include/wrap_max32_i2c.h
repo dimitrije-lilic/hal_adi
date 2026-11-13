@@ -199,6 +199,122 @@ static inline uint32_t Wrap_MXC_I2C_GetReadWriteBitStatus(mxc_i2c_regs_t *i2c)
 }
 
 /*
+ *  MAX32660 related mapping
+ *
+ *  Same I2C peripheral as MAX32650 (identical register layout and bit
+ *  positions), but the register and bit field names follow a different
+ *  naming convention.
+ */
+#elif defined(CONFIG_SOC_MAX32660)
+
+/*
+ *  Control register bits
+ */
+#define ADI_MAX32_I2C_CTRL_MASTER MXC_F_I2C_CTRL0_MST
+
+/*
+ *  Interrupt enable bits
+ */
+#define ADI_MAX32_I2C_INT_EN0_RX_THD MXC_F_I2C_INTEN0_RXTHIE
+#define ADI_MAX32_I2C_INT_EN0_TX_LOCK_OUT MXC_F_I2C_INTEN0_TXLOIE
+#define ADI_MAX32_I2C_INT_EN0_TX_THD MXC_F_I2C_INTEN0_TXTHIE
+#define ADI_MAX32_I2C_INT_EN0_DONE MXC_F_I2C_INTEN0_DONEIE
+#define ADI_MAX32_I2C_INT_EN0_STOP MXC_F_I2C_INTEN0_STOPIE
+#define ADI_MAX32_I2C_INT_EN0_ADDR_MATCH MXC_F_I2C_INTEN0_AMIE
+#define ADI_MAX32_I2C_INT_EN0_ADDR_ACK MXC_F_I2C_INTEN0_ADRACKIE
+#define ADI_MAX32_I2C_INT_EN1_RX_OVERFLOW MXC_F_I2C_INTEN1_RXOFIE
+#define ADI_MAX32_I2C_INT_EN1_TX_UNDERFLOW MXC_F_I2C_INTEN1_TXUFIE
+#define ADI_MAX32_I2C_INT_EN0_ERR                                                       \
+    (MXC_F_I2C_INTEN0_ARBERIE | MXC_F_I2C_INTEN0_TOERIE | MXC_F_I2C_INTEN0_ADRERIE |    \
+     MXC_F_I2C_INTEN0_DATERIE | MXC_F_I2C_INTEN0_DNRERIE | MXC_F_I2C_INTEN0_STRTERIE | \
+     MXC_F_I2C_INTEN0_STOPERIE)
+
+/*
+ *  Interrupt flags
+ */
+#define ADI_MAX32_I2C_INT_FL0_RX_THD MXC_F_I2C_INTFL0_RXTHI
+#define ADI_MAX32_I2C_INT_FL0_TX_LOCK_OUT MXC_F_I2C_INTFL0_TXLOI
+#define ADI_MAX32_I2C_INT_FL0_TX_THD MXC_F_I2C_INTFL0_TXTHI
+#define ADI_MAX32_I2C_INT_FL0_ADDR_MATCH MXC_F_I2C_INTFL0_AMI
+#define ADI_MAX32_I2C_INT_FL0_ADDR_ACK MXC_F_I2C_INTFL0_ADRACKI
+#define ADI_MAX32_I2C_INT_FL0_STOP MXC_F_I2C_INTFL0_STOPI
+#define ADI_MAX32_I2C_INT_FL0_DONE MXC_F_I2C_INTFL0_DONEI
+#define ADI_MAX32_I2C_INT_FL1_RX_OVERFLOW MXC_F_I2C_INTFL1_RXOFI
+#define ADI_MAX32_I2C_INT_FL0_ERR                                                    \
+    (MXC_F_I2C_INTFL0_ARBERI | MXC_F_I2C_INTFL0_TOERI | MXC_F_I2C_INTFL0_ADRERI |    \
+     MXC_F_I2C_INTFL0_DATERI | MXC_F_I2C_INTFL0_DNRERI | MXC_F_I2C_INTFL0_STRTERI | \
+     MXC_F_I2C_INTFL0_STOPERI)
+
+/*
+ *  DMA enable bits
+ */
+#define ADI_MAX32_I2C_DMA_RX_EN MXC_F_I2C_DMA_RXEN
+#define ADI_MAX32_I2C_DMA_TX_EN MXC_F_I2C_DMA_TXEN
+
+static inline void Wrap_MXC_I2C_GetIntEn(mxc_i2c_regs_t *i2c, unsigned int *int_en0,
+                                         unsigned int *int_en1)
+{
+    *int_en0 = i2c->inten0;
+    *int_en1 = i2c->inten1;
+}
+
+static inline void Wrap_MXC_I2C_SetIntEn(mxc_i2c_regs_t *i2c, unsigned int int_en0,
+                                         unsigned int int_en1)
+{
+    i2c->inten0 = int_en0;
+    i2c->inten1 = int_en1;
+}
+
+static inline uint32_t Wrap_MXC_I2C_GetTxFIFOLevel(mxc_i2c_regs_t *i2c)
+{
+    return (i2c->txctrl1 & MXC_F_I2C_TXCTRL1_TXFIFO) >> MXC_F_I2C_TXCTRL1_TXFIFO_POS;
+}
+
+static inline void Wrap_MXC_I2C_SetRxCount(mxc_i2c_regs_t *i2c, unsigned int len)
+{
+    if (len < 256) {
+        i2c->rxctrl1 = len;
+    } else {
+        i2c->rxctrl1 = 0;
+    }
+}
+
+static inline void Wrap_MXC_I2C_WaitForRestart(mxc_i2c_regs_t *i2c)
+{
+    while (i2c->mstr_mode & MXC_F_I2C_MSTR_MODE_RESTART) {}
+}
+
+static inline void Wrap_MXC_I2C_Start(mxc_i2c_regs_t *i2c)
+{
+    i2c->mstr_mode |= MXC_F_I2C_MSTR_MODE_START;
+}
+
+static inline void Wrap_MXC_I2C_Restart(mxc_i2c_regs_t *i2c)
+{
+    i2c->mstr_mode |= MXC_F_I2C_MSTR_MODE_RESTART;
+}
+
+static inline void Wrap_MXC_I2C_Stop(mxc_i2c_regs_t *i2c)
+{
+    i2c->mstr_mode |= MXC_F_I2C_MSTR_MODE_STOP;
+}
+
+static inline void Wrap_MXC_I2C_WaitForBusyClear(mxc_i2c_regs_t *i2c)
+{
+    while (i2c->status & MXC_F_I2C_STATUS_CKMD) {}
+}
+
+static inline void Wrap_MXC_I2C_GetCtrl(mxc_i2c_regs_t *i2c, unsigned int *ctrl)
+{
+    *ctrl = i2c->ctrl0;
+}
+
+static inline uint32_t Wrap_MXC_I2C_GetReadWriteBitStatus(mxc_i2c_regs_t *i2c)
+{
+    return i2c->ctrl0 & MXC_F_I2C_CTRL0_READ;
+}
+
+/*
  *  MAX32690, MAX32655 related mapping
  */
 #elif defined(CONFIG_SOC_MAX32690) || defined(CONFIG_SOC_MAX32655) || \
